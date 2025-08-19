@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeeMe - Secure Text Encryption</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4a6fa5;
+            text-align: center;
+        }
+
+        .box {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        button:hover {
+            background: #3a5a8f;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 SeeMe</h1>
+        <p>Encrypt & decrypt text with password protection</p>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div class="box">
+            <h2>🔐 Encrypt Text</h2>
+            <textarea id="plainText" placeholder="Enter your secret message..."></textarea>
+            <input type="password" id="encryptPassword" placeholder="Set a password">
+            <button onclick="encrypt()">Encrypt</button>
+            <textarea id="encryptedResult" placeholder="Encrypted result" readonly></textarea>
+            <button onclick="copyEncrypted()">Copy Ciphertext</button>
+        </div>
+        
+        <div class="box">
+            <h2>🔓 Decrypt Text</h2>
+            <textarea id="cipherText" placeholder="Paste ciphertext here..."></textarea>
+            <input type="password" id="decryptPassword" placeholder="Enter password">
+            <button onclick="decrypt()">Decrypt</button>
+            <textarea id="decryptedResult" placeholder="Decrypted result" readonly></textarea>
+        </div>
+    </div>
+    
+    <script>
+        function showStatus(message, isError = false) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = isError ? 'status error' : 'status success';
+            statusElement.style.display = 'block';
+            
+            // Hide status after 5 seconds
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        async function encrypt() {
+            const text = document.getElementById('plainText').value;
+            const password = document.getElementById('encryptPassword').value;
+            
+            if (!text || !password) {
+                showStatus("Please enter text and password!", true);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, password })
+                });
+                
+                const data = await response.json();
+                if (data.error) {
+                    showStatus(data.error, true);
+                } else {
+                    document.getElementById('encryptedResult').value = data.ciphertext;
+                    showStatus("Text encrypted successfully!");
+                }
+            } catch (error) {
+                showStatus("Encryption failed. Try again.", true);
+            }
+        }
+        
+        async function decrypt() {
+            const ciphertext = document.getElementById('cipherText').value;
+            const password = document.getElementById('decryptPassword').value;
+            
+            if (!ciphertext || !password) {
+                showStatus("Please enter ciphertext and password!", true);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ciphertext, password })
+                });
+                
+                const data = await response.json();
+                if (data.error) {
+                    showStatus(data.error, true);
+                } else {
+                    document.getElementById('decryptedResult').value = data.plaintext;
+                    showStatus("Text decrypted successfully!");
+                }
+            } catch (error) {
+                showStatus("Decryption failed. Wrong password?", true);
+            }
+        }
+        
+        function copyEncrypted() {
+            const encryptedText = document.getElementById('encryptedResult');
+            encryptedText.select();
+            document.execCommand('copy');
+            showStatus("Copied to clipboard!");
+        }
+    </script>
+</body>
+</html>
